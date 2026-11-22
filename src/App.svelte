@@ -11,6 +11,8 @@
   import Settings from "./components/Settings.svelte";
   import Icon from "./components/Icon.svelte";
   import PresetDialog from "./components/PresetDialog.svelte";
+  import UpdateDialog from "./components/UpdateDialog.svelte";
+  import { upd, startUpdateChecks } from "./lib/updater.svelte";
 
   let ready = $state(false);
   let error = $state("");
@@ -20,6 +22,7 @@
     init()
       .then(() => (ready = true))
       .catch((e) => (error = String(e)));
+    startUpdateChecks();
   });
 
   const tabs: [Tab, string, string][] = [
@@ -92,6 +95,10 @@
 
   {#if app.presetDialog}
     <PresetDialog mode={app.presetDialog} onclose={() => (app.presetDialog = null)} />
+  {/if}
+
+  {#if upd.show}
+    <UpdateDialog />
   {/if}
 
   <div class="snackbars">

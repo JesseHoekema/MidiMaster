@@ -1,7 +1,8 @@
 name: Build
 
 # Every push to main builds all three versions (download them under the run's Artifacts).
-# Pushing a tag like v0.1.0 also publishes them together as a GitHub release.
+# Pushing a tag like v0.2.0 publishes them as a GitHub release, plus latest.json,
+# the update feed the app checks.
 on:
   push:
     branches: [main]
@@ -17,22 +18,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: macos-apple-silicon
+          - platform: macos_silicon
             runner: macos-latest
             target: aarch64-apple-darwin
-            files: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          - name: macos-intel
+          - platform: macos_intel
             runner: macos-latest
             target: x86_64-apple-darwin
-            files: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          - name: windows
+          - platform: windows
             runner: windows-latest
             target: x86_64-pc-windows-msvc
-            files: |
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-    name: ${{ matrix.name }}
+    name: ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
+    env:
+      # signs the update bundles; without it the build can't make updates
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,17 +53,35 @@ jobs:
       - run: npm ci
 
       - name: Unit tests
-        if: matrix.name == 'macos-apple-silicon'
+        if: matrix.platform == 'macos_silicon'
         working-directory: src-tauri
         run: cargo test --lib
 
       - name: Build app
         run: npx tauri build --target ${{ matrix.target }}
 
+      - name: Name the files after the platform
+        shell: bash
+        run: |
+          V=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          B=src-tauri/target/${{ matrix.target }}/release/bundle
+          P=MidiMaster_${V}_${{ matrix.platform }}
+          mkdir -p out
+          if [ "${{ matrix.platform }}" = windows ]; then
+            cp $B/nsis/*-setup.exe      out/${P}_setup.exe
+            cp $B/nsis/*-setup.exe.sig  out/${P}_setup.exe.sig
+            cp $B/msi/*.msi             out/${P}.msi
+          else
+            cp $B/dmg/*.dmg                out/${P}.dmg
+            cp $B/macos/*.app.tar.gz       out/${P}.app.tar.gz
+            cp $B/macos/*.app.tar.gz.sig   out/${P}.app.tar.gz.sig
+          fi
+          ls -la out
+
       - uses: actions/upload-artifact@v4
         with:
-          name: MidiMaster-${{ matrix.name }}
-          path: ${{ matrix.files }}
+          name: MidiMaster_${{ matrix.platform }}
+          path: out/*
           if-no-files-found: error
 
   release:
@@ -71,12 +89,37 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
 
-      - run: ls -la dist
+      - name: Write the update feed (latest.json)
+        run: |
+          node - <<'EOF'
+          const fs = require("fs");
+          const v = require("./src-tauri/tauri.conf.json").version;
+          const base = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}`;
+          const entry = (file) => ({
+            url: `${base}/${file}`,
+            signature: fs.readFileSync(`dist/${file}.sig`, "utf8").trim(),
+          });
+          const feed = {
+            version: v,
+            notes: `MidiMaster ${v}. See the release page for what's new.`,
+            pub_date: new Date().toISOString(),
+            platforms: {
+              "darwin-aarch64": entry(`MidiMaster_${v}_macos_silicon.app.tar.gz`),
+              "darwin-x86_64": entry(`MidiMaster_${v}_macos_intel.app.tar.gz`),
+              "windows-x86_64": entry(`MidiMaster_${v}_windows_setup.exe`),
+            },
+          };
+          fs.writeFileSync("dist/latest.json", JSON.stringify(feed, null, 2));
+          EOF
+          rm dist/*.sig
+          ls -la dist
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -84,9 +127,10 @@ jobs:
           body: |
             | Your computer | Download |
             |---|---|
-            | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_*_aarch64.dmg` |
-            | Mac with Intel processor | `MidiMaster_*_x64.dmg` |
-            | Windows 10 / 11 | `MidiMaster_*_x64-setup.exe` (or the `.msi`) |
+            | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_*_macos_silicon.dmg` |
+            | Mac with an Intel processor | `MidiMaster_*_macos_intel.dmg` |
+            | Windows 10 / 11 | `MidiMaster_*_windows_setup.exe` (or the `.msi`) |
 
-            See the README for first-launch steps.
-          files: dist/**/*
+            Already have MidiMaster 0.2.0 or newer? It offers this update by itself.
+            The `.app.tar.gz` files and `latest.json` are for the built-in updater.
+          files: dist/*

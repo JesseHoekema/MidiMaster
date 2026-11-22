@@ -5,6 +5,7 @@
   import { app, deviceLabel, refreshStatus, save, toast } from "../lib/state.svelte";
   import type { LocalObs } from "../lib/types";
   import Icon from "./Icon.svelte";
+  import { upd, checkForUpdate } from "../lib/updater.svelte";
 
   let inputs = $state<string[]>([]);
   let autostart = $state(false);
@@ -143,6 +144,20 @@
           <button class="btn tonal" onclick={obsTest} disabled={busy === "obs"}>{busy === "obs" ? "Connecting…" : "Test connection"}</button>
           <button class="btn text small has-icon" onclick={checkObs}><Icon name="refresh" size={18} />Check again</button>
         </div>
+      </div>
+      <div class="card">
+        <h3><Icon name="refresh" size={20} /> About and updates</h3>
+        <p style="margin:0 0 12px">MidiMaster {upd.current}</p>
+        <div class="row">
+          <button class="btn tonal" onclick={() => checkForUpdate(true)} disabled={upd.checking}>
+            {upd.checking ? "Checking…" : "Check for updates"}
+          </button>
+          {#if upd.latest}
+            <button class="btn filled" onclick={() => (upd.show = true)}>Install {upd.latest}</button>
+          {/if}
+        </div>
+        {#if upd.message}<p class="hint" style="margin:12px 0 0">{upd.message}</p>{/if}
+        <p class="hint" style="margin:12px 0 0">MidiMaster checks for updates by itself when it starts and every few hours.</p>
       </div>
     </div>
   </div>

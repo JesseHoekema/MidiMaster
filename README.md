@@ -20,9 +20,11 @@
 
    | Your computer | File to download |
    |---|---|
-   | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_<version>_aarch64.dmg` |
-   | Mac with an Intel processor | `MidiMaster_<version>_x64.dmg` |
-   | Windows 10 or 11 | `MidiMaster_<version>_x64-setup.exe` (or the `.msi`) |
+   | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_<version>_macos_silicon.dmg` |
+   | Mac with an Intel processor | `MidiMaster_<version>_macos_intel.dmg` |
+   | Windows 10 or 11 | `MidiMaster_<version>_windows_setup.exe` (or `_windows.msi`) |
+
+   The `.app.tar.gz` files and `latest.json` in a release are for the built-in updater; you don't need them.
 
    Not sure which Mac you have? Apple menu → *About This Mac*: “Chip: Apple M…” means Apple Silicon, “Processor: Intel…” means Intel.
 
@@ -38,6 +40,13 @@ MidiMaster isn't code-signed yet, so your computer asks once whether you trust i
   System Settings → Privacy & Security, scroll down and click **Open Anyway** next to MidiMaster.
   (On older macOS versions: right-click MidiMaster → *Open* → *Open*.)
 - **Windows:** if you see “Windows protected your PC”, click **More info** → **Run anyway**.
+
+### Updates
+
+From version 0.2.0 on, MidiMaster updates itself. When a new version is out, a popup offers it:
+click **Update** and MidiMaster downloads it, installs it and restarts. It checks when it starts and
+every few hours; you can also check in **Settings → About and updates**.
+Updates are signed, and MidiMaster only installs updates signed with the project's key.
 
 ### Permissions (Mac)
 
@@ -130,4 +139,10 @@ To publish a release, push a version tag:
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-The workflow builds Apple Silicon, Intel and Windows, then attaches all installers to one GitHub release.
+The workflow builds Apple Silicon, Intel and Windows, names the files after the platform
+(`macos_silicon`, `macos_intel`, `windows`), and publishes them in one GitHub release together with
+`latest.json`, the update feed the app reads.
+
+Update signing needs the private key as repository secrets (`TAURI_SIGNING_PRIVATE_KEY` and
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). The matching public key is in `src-tauri/tauri.conf.json`.
+Keep a backup of the private key: without it, installed apps can't receive updates.

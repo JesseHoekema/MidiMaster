@@ -31,6 +31,11 @@
         return null;
       }
       if (cmd === "get_presets") return structuredClone(PRESETS);
+      if (cmd === "plugin:app|version") return "0.2.0";
+      if (cmd === "plugin:updater|check")
+        return new URLSearchParams(location.search).get("update")
+          ? { rid: 1, currentVersion: "0.2.0", version: "0.3.0", date: "2026-12-01", body: "• New device presets\n• Faster MIDI learn\n• Bug fixes", rawJson: {} }
+          : null;
       if (cmd === "obs_local") return { found: true, enabled: false, port: 4455, auth: true };
       if (cmd === "obs_lists") return { scenes: ["Camera", "Screen", "Be right back"], inputs: ["Mic/Aux", "Desktop Audio"] };
       if (cmd.startsWith("plugin:autostart")) return false;
