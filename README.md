@@ -6,11 +6,57 @@
 
 <p align="center">
   Build a picture of your MIDI controller, map every knob, fader, button and joystick,
-  and use it to control your computer. Runs on <b>macOS</b> and <b>Windows</b>.
+  and use it to control your computer. Runs on <b>macOS</b> (Apple Silicon and Intel) and <b>Windows</b>.
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/builder.png" alt="MidiMaster: the MidiMaster Deck preset with a fader mapped to system volume" width="900">
+</p>
+
+## Install
+
+1. Open the [**latest release**](../../releases/latest).
+2. Download the file for your computer:
+
+   | Your computer | File to download |
+   |---|---|
+   | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_<version>_aarch64.dmg` |
+   | Mac with an Intel processor | `MidiMaster_<version>_x64.dmg` |
+   | Windows 10 or 11 | `MidiMaster_<version>_x64-setup.exe` (or the `.msi`) |
+
+   Not sure which Mac you have? Apple menu → *About This Mac*: “Chip: Apple M…” means Apple Silicon, “Processor: Intel…” means Intel.
+
+3. Install it:
+   - **Mac:** open the `.dmg` and drag **MidiMaster** into **Applications**.
+   - **Windows:** run the installer.
+
+### First launch
+
+MidiMaster isn't code-signed yet, so your computer asks once whether you trust it.
+
+- **Mac:** open MidiMaster from Applications. If macOS says it can't be opened, go to
+  System Settings → Privacy & Security, scroll down and click **Open Anyway** next to MidiMaster.
+  (On older macOS versions: right-click MidiMaster → *Open* → *Open*.)
+- **Windows:** if you see “Windows protected your PC”, click **More info** → **Run anyway**.
+
+### Permissions (Mac)
+
+Media keys, keyboard shortcuts and typing text need **Accessibility** permission:
+System Settings → Privacy & Security → Accessibility → turn on **MidiMaster**.
+
+### Getting started
+
+1. Plug in your controller. The **New** button offers a **device preset**: pick **MidiMaster Deck** and every
+   control is placed and mapped like the real Deck. For any other controller, start empty, drag in controls
+   and use **Learn**.
+2. Select a control and add actions (volume, media keys, Spotify, OBS, shortcuts…).
+3. Close the window: MidiMaster keeps running in the menu bar / system tray. Turn on
+   *Start MidiMaster when I log in* in Settings to have it always ready.
+
+## What it does
+
 - **Device presets:** pick *MidiMaster Deck* and every control is placed where it sits on the real Deck, already mapped. Or start empty.
-- **Builder:** drag knobs, encoders, faders (vertical and horizontal), joysticks, buttons, pads and text onto a canvas; move, resize, name and colour them.
+- **Builder:** drag knobs, encoders, faders (vertical and horizontal), joysticks, buttons, pads and text onto a canvas; move, resize, name and colour them. Drag the empty canvas to move around.
 - **MIDI Learn:** select a control, click *Learn*, move the real thing. Supports CC, 14-bit CC, pitch bend and notes.
 - **Live view:** every control follows the hardware and lights up when it moves. Unmapped controls are outlined; the *MIDI monitor* lists every message and which ones nothing listens to.
 - **Actions:** system volume, mute, mic volume and mute, per-app volume (Windows), next output device (Mac), screen brightness, media keys, Spotify (play/pause, next, previous, like, shuffle, repeat, volume, jump, scrub), keyboard shortcuts, typing text, opening apps, files and websites, running commands, OBS (scenes, mute, source volume, record, stream).
@@ -18,24 +64,21 @@
 - **Layers:** one button switches what all controls do.
 - **Profiles:** switch automatically by the app in front.
 - **MidiMaster Deck settings:** the Deck's own settings (output mode, resolution, acceleration, directions, joystick), stored on the Deck.
-- Drag the empty canvas (or use the middle mouse button) to move around.
-- Runs in the menu bar / system tray with a one-colour icon; optional start at login.
+- Runs in the menu bar / system tray with a one-colour icon; optional start at login. Light and dark mode.
 
-## Download
+## Screenshots
 
-Every push to `main` builds installers on GitHub (Actions → latest run → *Artifacts*):
-`MidiMaster-windows` (`.msi` and `.exe`) and `MidiMaster-macos` (`.dmg`, Intel + Apple Silicon).
-Pushing a tag like `v0.1.0` also attaches them to a GitHub release.
+| | |
+|---|---|
+| ![Choosing a device preset](docs/screenshots/presets.png) | ![Dark mode with a knob mapped to media keys](docs/screenshots/builder-dark.png) |
+| **Device presets:** start from the MidiMaster Deck layout | **Dark mode:** a knob that skips tracks when turned |
+| ![MIDI monitor](docs/screenshots/monitor.png) | ![MidiMaster Deck settings](docs/screenshots/deck.png) |
+| **MIDI monitor:** every message, and which ones aren't mapped | **MidiMaster Deck:** settings stored on the Deck itself |
 
-The apps aren't code-signed, so the first launch needs one extra step:
-
-- **macOS:** right-click MidiMaster → *Open* → *Open*.
-- **Windows:** “Windows protected your PC” → *More info* → *Run anyway*.
-
-## Permissions (macOS)
-
-Media keys, keyboard shortcuts and typing need **Accessibility** permission:
-System Settings → Privacy & Security → Accessibility → turn on MidiMaster.
+<p align="center">
+  <img src="docs/screenshots/settings.png" alt="Settings: MIDI inputs, start at login, Spotify and OBS" width="700"><br>
+  <b>Settings:</b> MIDI inputs, start at login, Spotify and OBS
+</p>
 
 ## Spotify
 
@@ -73,5 +116,18 @@ npx tauri dev
 cd src-tauri && cargo test --lib
 ```
 
-Code: `src-tauri/src` (Rust: MIDI, mapping engine, actions, Spotify, OBS, serial) and `src` (Svelte interface).
-Settings live in `config.json` in the app's config folder.
+- Code: `src-tauri/src` (Rust: MIDI, mapping engine, actions, Spotify, OBS, serial) and `src` (Svelte interface).
+- Settings live in `config.json` in the app's config folder.
+- `dev/mock.html` runs the interface in a browser with a fake backend (`npx vite`, then open `/dev/mock.html`;
+  add `?demo=1` for the screenshot demo).
+
+### Releases
+
+Every push to `main` builds all three versions with GitHub Actions (download them from the run's *Artifacts*).
+To publish a release, push a version tag:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The workflow builds Apple Silicon, Intel and Windows, then attaches all installers to one GitHub release.

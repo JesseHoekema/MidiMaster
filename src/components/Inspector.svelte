@@ -192,7 +192,7 @@
           <div class="row">
             <label class="field"><span>When</span>
               {#if info.continuous}
-                <select disabled><option>Follows the value</option></select>
+                <select disabled><option>Follows value</option></select>
               {:else}
                 <select bind:value={s.trigger} onchange={save}>
                   {#each TRIGGERS as [t, l]}<option value={t}>{l}</option>{/each}
