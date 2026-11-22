@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>MidiMaster (mock)</title></head>
+<body>
+<div id="app"></div>
+<script>
+  // Dev only: a fake Tauri backend so the interface can be tried in a browser.
+  // Open http://localhost:1420/dev/mock.html and call sim(cc, value) in the console.
+  const config = {"profiles":[{"id":"default","name":"My controller","apps":[],"layers":["Main"],"controls":[{"id":"enc1","kind":"encoder","label":"Knob 1","x":200.0,"y":40.0,"w":80.0,"h":80.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":16},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"btn1","kind":"button","label":"Push 1","x":215.0,"y":135.0,"w":50.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":17},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"fader1","kind":"slider","label":"Fader 1","x":215.0,"y":190.0,"w":50.0,"h":260.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":7},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"enc2","kind":"encoder","label":"Knob 2","x":310.0,"y":40.0,"w":80.0,"h":80.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":23},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"btn2","kind":"button","label":"Push 2","x":325.0,"y":135.0,"w":50.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":27},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"fader2","kind":"slider","label":"Fader 2","x":325.0,"y":190.0,"w":50.0,"h":260.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":8},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"enc3","kind":"encoder","label":"Knob 3","x":420.0,"y":40.0,"w":80.0,"h":80.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":24},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"btn3","kind":"button","label":"Push 3","x":435.0,"y":135.0,"w":50.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":28},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"fader3","kind":"slider","label":"Fader 3","x":435.0,"y":190.0,"w":50.0,"h":260.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":9},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"enc4","kind":"encoder","label":"Knob 4","x":530.0,"y":40.0,"w":80.0,"h":80.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":25},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"btn4","kind":"button","label":"Push 4","x":545.0,"y":135.0,"w":50.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":29},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"fader4","kind":"slider","label":"Fader 4","x":545.0,"y":190.0,"w":50.0,"h":260.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":10},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"enc5","kind":"encoder","label":"Knob 5","x":640.0,"y":40.0,"w":80.0,"h":80.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":26},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"btn5","kind":"button","label":"Push 5","x":655.0,"y":135.0,"w":50.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":30},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"fader5","kind":"slider","label":"Fader 5","x":655.0,"y":190.0,"w":50.0,"h":260.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":11},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"joy","kind":"joystick","label":"Joystick","x":30.0,"y":250.0,"w":140.0,"h":140.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":20},"bindingY":{"kind":"cc","channel":1,"number":21},"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]},{"id":"joyBtn","kind":"button","label":"Joy push","x":65.0,"y":420.0,"w":70.0,"h":34.0,"color":"#2f6fde","binding":{"kind":"cc","channel":1,"number":22},"bindingY":null,"invert":false,"invertY":false,"min":0.0,"max":1.0,"curve":1.0,"actions":[]}]}],"activeProfile":"default","autoSwitch":true,"midiInputs":[],"spotifyClientId":"","obsUrl":"ws://127.0.0.1:4455","obsPassword":"","startHidden":false};
+  const handlers = {};
+  let cbId = 0;
+  window.__TAURI_INTERNALS__ = {
+    metadata: { currentWindow: { label: "main" }, currentWebview: { windowLabel: "main", label: "main" } },
+    transformCallback(cb) { const id = ++cbId; window["_" + id] = cb; return id; },
+    async invoke(cmd, args) {
+      if (cmd === "plugin:event|listen") { (handlers[args.event] ??= []).push(args.handler); return args.handler; }
+      if (cmd === "plugin:event|unlisten") return;
+      if (cmd === "get_config") return structuredClone(config);
+      if (cmd === "save_config") { Object.assign(config, args.config); return; }
+      if (cmd === "get_status") return { layer: 0, frontmost: "Spotify", spotifyConnected: false, spotifyRedirect: "http://127.0.0.1:43821/callback" };
+      if (cmd === "control_snapshot") return [];
+      if (cmd === "list_midi_inputs") return ["RP2040 Zero"];
+      if (cmd === "controller_ports") return [{ name: "/dev/cu.usbmodem101", product: "RP2040 Zero" }];
+      if (cmd === "test_action") return "Done (mock)";
+      if (cmd.startsWith("plugin:autostart")) return false;
+      return null;
+    },
+  };
+  function emit(event, payload) { for (const h of handlers[event] ?? []) window["_" + h]?.({ event, id: 0, payload }); }
+  // fake hardware: send a CC on channel 1; the matching control moves like the real backend would make it
+  window.sim = (cc, value) => {
+    emit("midi", { port: "RP2040 Zero", channel: 1, kind: "cc", number: cc, value });
+    const p = config.profiles.find((p) => p.id === config.activeProfile);
+    for (const c of p.controls) {
+      if (c.binding?.kind === "cc" && c.binding.number === cc) emit("control", { id: c.id, x: value / 127, y: 0 });
+      if (c.bindingY?.kind === "cc" && c.bindingY.number === cc) emit("control", { id: c.id, x: 0.5, y: value / 127 });
+    }
+  };
+</script>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

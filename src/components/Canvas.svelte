@@ -1,0 +1,204 @@
+<script lang="ts">
+  // The picture of the controller. Edit mode: drag, resize, select, drop new
+  // controls from the palette. Live mode: everything follows the hardware.
+  import { onMount } from "svelte";
+  import ControlView from "./ControlView.svelte";
+  import { app, profile, save, uid } from "../lib/state.svelte";
+  import { CONTROL_KINDS } from "../lib/catalog";
+  import type { Control, ControlKind } from "../lib/types";
+
+  const GRID = 10;
+  const snap = (v: number) => Math.round(v / GRID) * GRID;
+
+  let now = $state(performance.now());
+  let area: HTMLDivElement;
+
+  onMount(() => {
+    const t = setInterval(() => (now = performance.now()), 80);
+    const key = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (!app.editing || !app.selected || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "Backspace" || e.key === "Delete") {
+        remove(app.selected);
+        e.preventDefault();
+      }
+      const c = profile()?.controls.find((c) => c.id === app.selected);
+      const d: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+      if (c && d[e.key]) {
+        const step = e.shiftKey ? GRID * 5 : GRID;
+        c.x = Math.max(0, c.x + d[e.key][0] * step);
+        c.y = Math.max(0, c.y + d[e.key][1] * step);
+        save();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("keydown", key);
+    };
+  });
+
+  function remove(id: string) {
+    const p = profile();
+    if (!p) return;
+    p.controls = p.controls.filter((c) => c.id !== id);
+    app.selected = null;
+    save();
+  }
+
+  export function addControl(kind: ControlKind, x?: number, y?: number) {
+    const p = profile();
+    if (!p) return;
+    const k = CONTROL_KINDS.find((k) => k.kind === kind)!;
+    const n = p.controls.filter((c) => c.kind === kind).length + 1;
+    const c: Control = {
+      id: uid(),
+      kind,
+      label: kind === "label" ? "Text" : `${k.label} ${n}`,
+      x: snap(x ?? 40 + area.scrollLeft),
+      y: snap(y ?? 40 + area.scrollTop),
+      w: k.w,
+      h: k.h,
+      color: "#2f6fde",
+      binding: null,
+      bindingY: null,
+      invert: false,
+      invertY: false,
+      min: 0,
+      max: 1,
+      curve: 1,
+      actions: [],
+    };
+    p.controls.push(c);
+    app.selected = c.id;
+    save();
+  }
+
+  // ---- dragging and resizing
+  let drag: { id: string; mode: "move" | "size"; sx: number; sy: number; ox: number; oy: number; ow: number; oh: number } | null = null;
+
+  function down(e: PointerEvent, c: Control, mode: "move" | "size") {
+    e.stopPropagation();
+    app.selected = c.id;
+    if (!app.editing) return;
+    drag = { id: c.id, mode, sx: e.clientX, sy: e.clientY, ox: c.x, oy: c.y, ow: c.w, oh: c.h };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function move(e: PointerEvent) {
+    if (!drag) return;
+    const c = profile()?.controls.find((c) => c.id === drag!.id);
+    if (!c) return;
+    const dx = e.clientX - drag.sx;
+    const dy = e.clientY - drag.sy;
+    if (drag.mode === "move") {
+      c.x = Math.max(0, snap(drag.ox + dx));
+      c.y = Math.max(0, snap(drag.oy + dy));
+    } else {
+      c.w = Math.max(30, snap(drag.ow + dx));
+      c.h = Math.max(20, snap(drag.oh + dy));
+      if (c.kind === "knob" || c.kind === "encoder" || c.kind === "joystick" || c.kind === "pad") c.h = c.w;
+    }
+  }
+  function up() {
+    if (drag) save();
+    drag = null;
+  }
+
+  function drop(e: DragEvent) {
+    e.preventDefault();
+    const kind = e.dataTransfer?.getData("text/midimaster-kind") as ControlKind;
+    if (!kind) return;
+    const r = area.getBoundingClientRect();
+    const k = CONTROL_KINDS.find((k) => k.kind === kind)!;
+    addControl(kind, e.clientX - r.left + area.scrollLeft - k.w / 2, e.clientY - r.top + area.scrollTop - k.h / 2);
+  }
+
+  const size = $derived.by(() => {
+    const cs = profile()?.controls ?? [];
+    return {
+      w: Math.max(...cs.map((c) => c.x + c.w), 0) + 300,
+      h: Math.max(...cs.map((c) => c.y + c.h), 0) + 200,
+    };
+  });
+</script>
+
+<div
+  class="area"
+  class:editing={app.editing}
+  bind:this={area}
+  role="application"
+  ondragover={(e) => e.preventDefault()}
+  ondrop={drop}
+  onpointerdown={() => (app.selected = null)}
+>
+  <div class="board" style="width:{size.w}px; height:{size.h}px">
+    {#each profile()?.controls ?? [] as c (c.id)}
+      {@const v = app.values[c.id]}
+      {@const rest = c.kind === "joystick" ? 0.5 : 0}
+      <div
+        class="item"
+        class:selected={app.selected === c.id}
+        class:learning={app.learning?.id === c.id}
+        style="left:{c.x}px; top:{c.y}px; width:{c.w}px; height:{c.h}px"
+        role="button"
+        tabindex="-1"
+        onpointerdown={(e) => down(e, c, "move")}
+        onpointermove={move}
+        onpointerup={up}
+      >
+        <ControlView control={c} x={v?.x ?? rest} y={v?.y ?? rest} active={!!v && now - v.t < 260} />
+        {#if app.editing && app.selected === c.id}
+          <div
+            class="handle"
+            role="separator"
+            onpointerdown={(e) => down(e, c, "size")}
+            onpointermove={move}
+            onpointerup={up}
+          ></div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+  {#if (profile()?.controls.length ?? 0) === 0}
+    <div class="empty">Drag controls from the left onto this area to build your controller.</div>
+  {/if}
+</div>
+
+<style>
+  .area {
+    position: relative;
+    flex: 1;
+    overflow: auto;
+    background: var(--canvas);
+  }
+  .area.editing {
+    background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+  .board { position: relative; }
+  .item { position: absolute; touch-action: none; }
+  .editing .item { cursor: grab; }
+  .item.selected { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 10px; }
+  .item.learning { outline: 2px dashed var(--accent); outline-offset: 5px; animation: pulse 0.9s infinite; border-radius: 10px; }
+  @keyframes pulse { 50% { outline-color: transparent; } }
+  .handle {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--accent);
+    border: 2px solid var(--panel);
+    cursor: nwse-resize;
+  }
+  .empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    pointer-events: none;
+  }
+</style>
