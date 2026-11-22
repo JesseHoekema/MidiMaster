@@ -89,4 +89,4 @@ jobs:
             | Windows 10 / 11 | `MidiMaster_*_x64-setup.exe` (or the `.msi`) |
 
             See the README for first-launch steps.
-          files: dist/*
+          files: dist/**/*
