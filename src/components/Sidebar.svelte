@@ -73,8 +73,9 @@
       <button class="btn text small link" onclick={useFrontmost}><Icon name="add" size={18} />{app.status.frontmost}</button>
     {/if}
     <div class="row wrap">
-      <button class="btn tonal small has-icon" onclick={() => addProfile(false)}><Icon name="add" size={18} />New</button>
+      <button class="btn tonal small has-icon" onclick={() => (app.presetDialog = "new")}><Icon name="add" size={18} />New</button>
       <button class="icon-btn small" onclick={() => addProfile(true)} title="Duplicate profile"><Icon name="content_copy" size={20} /></button>
+      <button class="icon-btn small" onclick={() => (app.presetDialog = "replace")} title="Load a device preset into this profile"><Icon name="tune" size={20} /></button>
       <button class="icon-btn small danger" onclick={removeProfile} disabled={(app.config?.profiles.length ?? 0) < 2} title="Delete profile"><Icon name="delete" size={20} /></button>
     </div>
 
@@ -120,7 +121,7 @@
     padding: 4px 16px 24px 24px;
     overflow-y: auto;
   }
-  .wrap { flex-wrap: wrap; }
+  .wrap { flex-wrap: nowrap; gap: 4px; }
   .layer { margin-bottom: 8px; }
   .dot { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 2px solid var(--md-on-surface-variant); background: none; cursor: pointer; padding: 0; position: relative; }
   .dot.on { border-color: var(--md-primary); }

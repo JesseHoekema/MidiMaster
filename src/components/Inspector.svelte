@@ -30,6 +30,22 @@
     setBinding(axis, b as Binding);
   }
 
+  // OBS scene/source names for the suggestions in OBS actions
+  let obsLists = $state<{ scenes: string[]; inputs: string[] } | null>(null);
+  let obsError = $state("");
+  async function loadObs() {
+    try {
+      obsLists = await invoke("obs_lists");
+      obsError = "";
+    } catch (e) {
+      obsError = String(e);
+    }
+  }
+  const usesObs = $derived(!!c?.actions.some((s) => s.action.type.startsWith("obs")));
+  $effect(() => {
+    if (usesObs && !obsLists && !obsError) loadObs();
+  });
+
   function addAction(t: string) {
     if (!c || !t) return;
     const info = actionInfo(t as ActionType);
@@ -156,12 +172,23 @@
                 </select>
               {:else if prm.kind === "number"}
                 <input type="number" value={rec[prm.key]} oninput={(e) => { rec[prm.key] = Number(e.currentTarget.value); save(); }} />
+              {:else if s.action.type.startsWith("obs")}
+                <div class="row">
+                  <input
+                    value={rec[prm.key]}
+                    placeholder={obsLists ? "Pick or type a name" : prm.placeholder}
+                    list={prm.key === "name" ? "obs-scenes" : "obs-inputs"}
+                    oninput={(e) => { rec[prm.key] = e.currentTarget.value; save(); }}
+                  />
+                  <button class="icon-btn small" onclick={loadObs} title="Get the names from OBS again"><Icon name="refresh" size={20} /></button>
+                </div>
               {:else}
                 <input value={rec[prm.key]} placeholder={prm.placeholder} oninput={(e) => { rec[prm.key] = e.currentTarget.value; save(); }} />
               {/if}
             </label>
           {/each}
           {#if info.hint}<p class="hint">{info.hint}</p>{/if}
+          {#if s.action.type.startsWith("obs") && obsError}<p class="hint">Couldn't get names from OBS: {obsError}</p>{/if}
           <div class="row">
             <label class="field"><span>When</span>
               {#if info.continuous}
@@ -204,6 +231,8 @@
       {/if}
     {/if}
   {/if}
+  <datalist id="obs-scenes">{#each obsLists?.scenes ?? [] as n}<option value={n}></option>{/each}</datalist>
+  <datalist id="obs-inputs">{#each obsLists?.inputs ?? [] as n}<option value={n}></option>{/each}</datalist>
 </aside>
 
 <style>

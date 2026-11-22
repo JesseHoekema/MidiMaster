@@ -3,6 +3,7 @@
   // controls from the palette. Live mode: everything follows the hardware.
   import { onMount } from "svelte";
   import ControlView from "./ControlView.svelte";
+  import Icon from "./Icon.svelte";
   import { app, profile, save, uid } from "../lib/state.svelte";
   import { CONTROL_KINDS } from "../lib/catalog";
   import type { Control, ControlKind } from "../lib/types";
@@ -79,6 +80,7 @@
   let drag: { id: string; mode: "move" | "size"; sx: number; sy: number; ox: number; oy: number; ow: number; oh: number } | null = null;
 
   function down(e: PointerEvent, c: Control, mode: "move" | "size") {
+    if (e.button === 1) return; // middle button: let the canvas pan
     e.stopPropagation();
     app.selected = c.id;
     if (!app.editing) return;
@@ -105,6 +107,26 @@
     drag = null;
   }
 
+  // ---- panning: drag the empty canvas (or use the middle mouse button anywhere)
+  let pan: { sx: number; sy: number; l: number; t: number; moved: boolean } | null = $state(null);
+  function panDown(e: PointerEvent) {
+    if (e.button !== 0 && e.button !== 1) return;
+    pan = { sx: e.clientX, sy: e.clientY, l: area.scrollLeft, t: area.scrollTop, moved: false };
+    area.setPointerCapture(e.pointerId);
+  }
+  function panMove(e: PointerEvent) {
+    if (!pan) return;
+    const dx = e.clientX - pan.sx;
+    const dy = e.clientY - pan.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true;
+    area.scrollLeft = pan.l - dx;
+    area.scrollTop = pan.t - dy;
+  }
+  function panUp() {
+    if (pan && !pan.moved) app.selected = null; // a plain click on the background deselects
+    pan = null;
+  }
+
   function drop(e: DragEvent) {
     e.preventDefault();
     const kind = e.dataTransfer?.getData("text/midimaster-kind") as ControlKind;
@@ -117,8 +139,8 @@
   const size = $derived.by(() => {
     const cs = profile()?.controls ?? [];
     return {
-      w: Math.max(...cs.map((c) => c.x + c.w), 0) + 300,
-      h: Math.max(...cs.map((c) => c.y + c.h), 0) + 200,
+      w: Math.max(...cs.map((c) => c.x + c.w), 0) + 900,
+      h: Math.max(...cs.map((c) => c.y + c.h), 0) + 700,
     };
   });
 </script>
@@ -130,7 +152,11 @@
   role="application"
   ondragover={(e) => e.preventDefault()}
   ondrop={drop}
-  onpointerdown={() => (app.selected = null)}
+  class:panning={pan?.moved}
+  onpointerdown={panDown}
+  onpointermove={panMove}
+  onpointerup={panUp}
+  onpointercancel={panUp}
 >
   <div class="board" style="width:{size.w}px; height:{size.h}px">
     {#each profile()?.controls ?? [] as c (c.id)}
@@ -161,7 +187,12 @@
     {/each}
   </div>
   {#if (profile()?.controls.length ?? 0) === 0}
-    <div class="empty">Drag controls from the left onto this area to build your controller.</div>
+    <div class="empty">
+      <div>
+        <p>Drag controls from the left onto this area to build your controller,</p>
+        <button class="btn tonal has-icon" onclick={() => (app.presetDialog = "replace")}><Icon name="tune" size={18} />or start from a device preset</button>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -179,6 +210,8 @@
     background-size: 10px 10px;
   }
   .board { position: relative; }
+  .area { cursor: grab; }
+  .area.panning, .area.panning .item { cursor: grabbing; }
   .item { position: absolute; touch-action: none; }
   .editing .item { cursor: grab; }
   .item.selected { outline: 2px solid var(--md-primary); outline-offset: 6px; border-radius: 12px; }
@@ -201,6 +234,8 @@
     display: grid;
     place-items: center;
     color: var(--md-on-surface-variant);
+    text-align: center;
     pointer-events: none;
   }
+  .empty button { pointer-events: auto; }
 </style>

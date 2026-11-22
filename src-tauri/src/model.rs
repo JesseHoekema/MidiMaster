@@ -204,6 +204,9 @@ pub struct AppConfig {
     pub midi_inputs: Vec<String>,
     #[serde(default)]
     pub spotify_client_id: String,
+    /// Read the OBS WebSocket port and password from OBS's own settings file
+    #[serde(default = "yes")]
+    pub obs_auto: bool,
     #[serde(default = "default_obs_url")]
     pub obs_url: String,
     #[serde(default)]
@@ -228,11 +231,20 @@ impl AppConfig {
     }
 }
 
-/// The starting profile: a picture of the RP2040 controller this app was made for.
-pub fn default_config() -> AppConfig {
-    let cc = |n| Some(Binding { kind: BindKind::Cc, channel: 1, number: n });
-    let mut controls = Vec::new();
-    let mk = |id: &str, kind: &str, label: &str, x, y, w, h, b, by| Control {
+/// A ready-made layout for a known device.
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Preset {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    /// MIDI input names (lower case, substring match) that belong to this device
+    pub match_inputs: Vec<String>,
+    pub profile: Profile,
+}
+
+fn control(id: &str, kind: &str, label: &str, x: f64, y: f64, w: f64, h: f64, b: Option<Binding>, by: Option<Binding>) -> Control {
+    Control {
         id: id.into(),
         kind: kind.into(),
         label: label.into(),
@@ -249,29 +261,58 @@ pub fn default_config() -> AppConfig {
         max: 1.0,
         curve: 1.0,
         actions: vec![],
-    };
+    }
+}
+
+/// The MidiMaster Deck (RP2040-Zero PCB): 5 encoders with push buttons, 5 faders,
+/// joystick with button. Horizontal positions follow the PCB (4 px per mm):
+/// columns 26 mm apart, joystick 28.5 mm left of the first column, near the front.
+pub fn deck_profile() -> Profile {
+    let cc = |n| Some(Binding { kind: BindKind::Cc, channel: 1, number: n });
     let enc_cc = [16u8, 23, 24, 25, 26];
     let btn_cc = [17u8, 27, 28, 29, 30];
+    let mut controls = Vec::new();
     for i in 0..5 {
-        let x = 200.0 + i as f64 * 110.0;
-        controls.push(mk(&format!("enc{}", i + 1), "encoder", &format!("Knob {}", i + 1), x, 40.0, 80.0, 80.0, cc(enc_cc[i]), None));
-        controls.push(mk(&format!("btn{}", i + 1), "button", &format!("Push {}", i + 1), x + 15.0, 135.0, 50.0, 34.0, cc(btn_cc[i]), None));
-        controls.push(mk(&format!("fader{}", i + 1), "slider", &format!("Fader {}", i + 1), x + 15.0, 190.0, 50.0, 260.0, cc(7 + i as u8), None));
+        let cx = 242.0 + 104.0 * i as f64; // column centre: (94 + 26 i - 43.45) mm * 4 + 40
+        let n = i + 1;
+        controls.push(control(&format!("enc{n}"), "encoder", &format!("Knob {n}"), cx - 36.0, 40.0, 72.0, 72.0, cc(enc_cc[i]), None));
+        controls.push(control(&format!("btn{n}"), "button", &format!("Push {n}"), cx - 28.0, 136.0, 56.0, 28.0, cc(btn_cc[i]), None));
+        controls.push(control(&format!("fader{n}"), "slider", &format!("Fader {n}"), cx - 25.0, 204.0, 50.0, 240.0, cc(7 + i as u8), None));
     }
-    controls.push(mk("joy", "joystick", "Joystick", 30.0, 250.0, 140.0, 140.0, cc(20), cc(21)));
-    controls.push(mk("joyBtn", "button", "Joy push", 65.0, 420.0, 70.0, 34.0, cc(22), None));
+    controls.push(control("joy", "joystick", "Joystick", 64.0, 348.0, 128.0, 128.0, cc(20), cc(21)));
+    controls.push(control("joyBtn", "button", "Joy push", 96.0, 504.0, 64.0, 28.0, cc(22), None));
+    Profile { id: "deck".into(), name: "MidiMaster Deck".into(), apps: vec![], layers: default_layers(), controls }
+}
+
+pub fn presets() -> Vec<Preset> {
+    vec![
+        Preset {
+            id: "midimaster-deck".into(),
+            name: "MidiMaster Deck".into(),
+            description: "5 knobs with push, 5 faders and a joystick, laid out like the real Deck and already mapped.".into(),
+            match_inputs: vec!["midimaster".into(), "rp2040".into()],
+            profile: deck_profile(),
+        },
+        Preset {
+            id: "empty".into(),
+            name: "Empty".into(),
+            description: "Start from nothing and drag in your own controls.".into(),
+            match_inputs: vec![],
+            profile: Profile { id: "empty".into(), name: "New profile".into(), apps: vec![], layers: default_layers(), controls: vec![] },
+        },
+    ]
+}
+
+pub fn default_config() -> AppConfig {
+    let mut deck = deck_profile();
+    deck.id = "default".into();
     AppConfig {
-        profiles: vec![Profile {
-            id: "default".into(),
-            name: "My controller".into(),
-            apps: vec![],
-            layers: default_layers(),
-            controls,
-        }],
+        profiles: vec![deck],
         active_profile: "default".into(),
         auto_switch: true,
         midi_inputs: vec![],
         spotify_client_id: String::new(),
+        obs_auto: true,
         obs_url: default_obs_url(),
         obs_password: String::new(),
         start_hidden: false,

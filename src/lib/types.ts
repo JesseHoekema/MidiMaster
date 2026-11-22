@@ -88,6 +88,7 @@ export interface AppConfig {
   autoSwitch: boolean;
   midiInputs: string[];
   spotifyClientId: string;
+  obsAuto: boolean;
   obsUrl: string;
   obsPassword: string;
   startHidden: boolean;
@@ -106,4 +107,19 @@ export interface Status {
   frontmost: string;
   spotifyConnected: boolean;
   spotifyRedirect: string;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  matchInputs: string[];
+  profile: Profile;
+}
+
+export interface LocalObs {
+  found: boolean;
+  enabled: boolean;
+  port: number;
+  auth: boolean;
 }

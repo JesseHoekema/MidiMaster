@@ -37,6 +37,18 @@ pub struct Core {
 }
 
 impl Core {
+    /// Where to reach OBS: from OBS's own settings file (automatic) or from ours.
+    pub fn obs_target(&self) -> (String, String) {
+        let c = self.config.read();
+        if c.obs_auto {
+            let l = obs::local_settings();
+            if l.found {
+                return (format!("ws://127.0.0.1:{}", l.port), if l.auth { l.password } else { String::new() });
+            }
+        }
+        (c.obs_url.clone(), c.obs_password.clone())
+    }
+
     pub fn toast(&self, kind: &str, text: &str) {
         let _ = self.app.emit("toast", json!({ "kind": kind, "text": text }));
     }
@@ -305,10 +317,7 @@ async fn obs_test(core: CoreState<'_>) -> Result<String, String> {
     let core = core.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         core.obs.disconnect();
-        let (url, pw) = {
-            let c = core.config.read();
-            (c.obs_url.clone(), c.obs_password.clone())
-        };
+        let (url, pw) = core.obs_target();
         let v = core.obs.request(&url, &pw, "GetVersion", json!({}))?;
         let scenes = core.obs.request(&url, &pw, "GetSceneList", json!({}))?;
         let names: Vec<String> = scenes["scenes"]
@@ -323,6 +332,35 @@ async fn obs_test(core: CoreState<'_>) -> Result<String, String> {
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn obs_local() -> obs::LocalObs {
+    obs::local_settings()
+}
+
+/// Scene and source names from OBS, for the drop-downs in the action editor.
+#[tauri::command]
+async fn obs_lists(core: CoreState<'_>) -> Result<serde_json::Value, String> {
+    let core = core.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let (url, pw) = core.obs_target();
+        let names = |v: &serde_json::Value, list: &str, key: &str| -> Vec<String> {
+            v[list].as_array().map(|a| a.iter().filter_map(|s| s[key].as_str().map(String::from)).collect()).unwrap_or_default()
+        };
+        let scenes = core.obs.request(&url, &pw, "GetSceneList", json!({}))?;
+        let inputs = core.obs.request(&url, &pw, "GetInputList", json!({}))?;
+        let mut scene_names = names(&scenes, "scenes", "sceneName");
+        scene_names.reverse(); // OBS lists them bottom-up
+        Ok(json!({ "scenes": scene_names, "inputs": names(&inputs, "inputs", "inputName") }))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn get_presets() -> Vec<model::Preset> {
+    model::presets()
 }
 
 // ------------------------------------------------------------------ app
@@ -374,8 +412,11 @@ pub fn run() {
             let show = MenuItem::with_id(app, "show", "Open MidiMaster", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit MidiMaster", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
+            // one-colour icon; on macOS a "template" icon, so the menu bar shows it
+            // white on a dark menu bar (and dark on a light one) like system icons
             TrayIconBuilder::with_id("tray")
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
+                .icon_as_template(true)
                 .tooltip("MidiMaster")
                 .menu(&menu)
                 .on_menu_event(|app, e| match e.id.as_ref() {
@@ -413,6 +454,9 @@ pub fn run() {
             spotify_connect,
             spotify_disconnect,
             obs_test,
+            obs_local,
+            obs_lists,
+            get_presets,
         ])
         .build(tauri::generate_context!())
         .expect("error while starting MidiMaster")

@@ -130,10 +130,7 @@ fn launch(target: &str) -> Result<(), String> {
 pub fn execute(core: &Core, action: &Action, v: f64) -> Result<Option<String>, String> {
     let cid = || core.config.read().spotify_client_id.clone();
     let obs = |kind: &str, data: serde_json::Value| {
-        let (url, pw) = {
-            let c = core.config.read();
-            (c.obs_url.clone(), c.obs_password.clone())
-        };
+        let (url, pw) = core.obs_target();
         core.obs.request(&url, &pw, kind, data)
     };
     match action {

@@ -20,12 +20,18 @@ export const app = $state({
   learning: null as { id: string; axis: Axis } | null,
   toasts: [] as { id: number; kind: string; text: string }[],
   tab: "builder" as Tab,
+  presetDialog: null as null | "new" | "replace",
 });
 
 export function profile(): Profile | undefined {
   const c = app.config;
   if (!c) return undefined;
   return c.profiles.find((p) => p.id === c.activeProfile) ?? c.profiles[0];
+}
+
+/** MIDI and USB names of the Deck's RP2040-Zero board are shown as "MidiMaster Deck". */
+export function deviceLabel(name: string): string {
+  return /rp2040|midimaster/i.test(name) ? "MidiMaster Deck" : name;
 }
 
 export function selectedControl(): Control | undefined {

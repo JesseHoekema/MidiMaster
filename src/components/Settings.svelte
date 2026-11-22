@@ -2,17 +2,21 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-  import { app, refreshStatus, save, toast } from "../lib/state.svelte";
+  import { app, deviceLabel, refreshStatus, save, toast } from "../lib/state.svelte";
+  import type { LocalObs } from "../lib/types";
   import Icon from "./Icon.svelte";
 
   let inputs = $state<string[]>([]);
   let autostart = $state(false);
   let busy = $state("");
+  let obs = $state<LocalObs | null>(null);
+  const checkObs = async () => (obs = await invoke<LocalObs>("obs_local"));
   const isMac = navigator.userAgent.includes("Mac");
 
   onMount(async () => {
     inputs = await invoke("list_midi_inputs");
     autostart = await isEnabled().catch(() => false);
+    checkObs();
   });
 
   function toggleInput(name: string, on: boolean) {
@@ -67,11 +71,11 @@
         <h3><Icon name="settings_input_component" size={20} /> MIDI inputs</h3>
         {#each inputs as name}
           <label class="check">
-            {name}
+            <span>{deviceLabel(name)}{#if deviceLabel(name) !== name}<span class="body-small"> · {name}</span>{/if}</span>
             <input type="checkbox" class="switch" checked={!c.midiInputs.length || c.midiInputs.includes(name)} onchange={(e) => toggleInput(name, e.currentTarget.checked)} />
           </label>
         {:else}
-          <p class="hint">No MIDI devices found. Plug in your controller.</p>
+          <p class="hint">No MIDI devices found. Plug in your MidiMaster Deck.</p>
         {/each}
         <button class="btn text small has-icon" onclick={async () => (inputs = await invoke("list_midi_inputs"))}><Icon name="refresh" size={18} />Refresh</button>
         <p class="hint" style="margin-top:8px">New devices are picked up automatically within a couple of seconds.</p>
@@ -115,12 +119,30 @@
 
       <div class="card">
         <h3><Icon name="videocam" size={20} /> OBS Studio</h3>
-        <p class="hint">In OBS: Tools → WebSocket Server Settings → Enable. Copy the password from “Show Connect Info”.</p>
+        <label class="check">
+          <span>Connect automatically<br /><span class="body-small">Reads the port and password from OBS itself, like other control apps</span></span>
+          <input type="checkbox" class="switch" bind:checked={c.obsAuto} onchange={save} />
+        </label>
+        {#if c.obsAuto}
+          {#if !obs}
+            <p class="hint">Looking for OBS…</p>
+          {:else if !obs.found}
+            <p class="status warn"><Icon name="warning" size={18} /> OBS isn't installed on this computer, or hasn't been opened yet.</p>
+          {:else if !obs.enabled}
+            <p class="status warn"><Icon name="warning" size={18} /> Found OBS, but its WebSocket server is off. In OBS: Tools → WebSocket Server Settings → tick “Enable WebSocket server”.</p>
+          {:else}
+            <p class="status ok"><Icon name="check" size={18} /> Found OBS on port {obs.port}{obs.auth ? ", password read from OBS" : ""}.</p>
+          {/if}
+        {:else}
+          <div class="row">
+            <label class="field" style="flex:2"><span>Address</span><input bind:value={c.obsUrl} oninput={save} /></label>
+            <label class="field" style="flex:1"><span>Password</span><input type="password" bind:value={c.obsPassword} oninput={save} /></label>
+          </div>
+        {/if}
         <div class="row">
-          <label class="field" style="flex:2"><span>Address</span><input bind:value={c.obsUrl} oninput={save} /></label>
-          <label class="field" style="flex:1"><span>Password</span><input type="password" bind:value={c.obsPassword} oninput={save} /></label>
+          <button class="btn tonal" onclick={obsTest} disabled={busy === "obs"}>{busy === "obs" ? "Connecting…" : "Test connection"}</button>
+          <button class="btn text small has-icon" onclick={checkObs}><Icon name="refresh" size={18} />Check again</button>
         </div>
-        <button class="btn tonal" onclick={obsTest} disabled={busy === "obs"}>{busy === "obs" ? "Connecting…" : "Test connection"}</button>
       </div>
     </div>
   </div>
@@ -134,4 +156,6 @@
   .steps { padding-left: 18px; }
   .steps li { margin-bottom: 4px; }
   .ok { color: var(--md-success); font-weight: 500; }
+  .status { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 16px; }
+  .status.warn { color: var(--md-error); }
 </style>

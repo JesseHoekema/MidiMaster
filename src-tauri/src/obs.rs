@@ -92,3 +92,42 @@ impl Obs {
         *self.sock.lock() = None;
     }
 }
+
+/// OBS's own WebSocket settings, read from its config file
+/// (`obs-studio/plugin_config/obs-websocket/config.json`).
+#[derive(serde::Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalObs {
+    pub found: bool,
+    pub enabled: bool,
+    pub port: u16,
+    pub auth: bool,
+    #[serde(skip)]
+    pub password: String,
+}
+
+fn obs_config_path() -> Option<std::path::PathBuf> {
+    #[cfg(target_os = "macos")]
+    let base = std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join("Library/Application Support"));
+    #[cfg(target_os = "windows")]
+    let base = std::env::var_os("APPDATA").map(std::path::PathBuf::from);
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let base = std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config"));
+    base.map(|b| b.join("obs-studio").join("plugin_config").join("obs-websocket").join("config.json"))
+}
+
+pub fn local_settings() -> LocalObs {
+    let Some(v) = obs_config_path()
+        .and_then(|p| std::fs::read(p).ok())
+        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+    else {
+        return LocalObs::default();
+    };
+    LocalObs {
+        found: true,
+        enabled: v["server_enabled"].as_bool().unwrap_or(false),
+        port: v["server_port"].as_u64().unwrap_or(4455) as u16,
+        auth: v["auth_required"].as_bool().unwrap_or(true),
+        password: v["server_password"].as_str().unwrap_or("").to_string(),
+    }
+}

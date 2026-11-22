@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings stored on the RP2040 controller itself (replaces the old web page).
+  // Settings stored on the MidiMaster Deck itself (replaces the old web page).
   import { onDestroy, onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -61,14 +61,14 @@
           const m = JSON.parse(e.payload);
           if (m.cfg) cfg = m.cfg;
           if (m.mon) mon = m.mon;
-          if (m.saved) note = "Saved on the controller.";
+          if (m.saved) note = "Saved on the Deck.";
           if (m.synced) note = "All values sent.";
-          if (m.error) toast("error", `Controller: ${m.error}`);
+          if (m.error) toast("error", `Deck: ${m.error}`);
         } catch {}
       }),
       await listen("controller-closed", () => {
         connected = false;
-        toast("error", "Controller disconnected");
+        toast("error", "MidiMaster Deck disconnected");
       }),
     );
     await scan();
@@ -81,13 +81,13 @@
 
 <div class="panel">
   <div class="inner">
-    <p class="hint">These settings live on the RP2040 controller itself and are saved there automatically.</p>
+    <p class="hint">These settings live on your MidiMaster Deck itself and are saved there automatically.</p>
 
     <div class="card row">
       <select bind:value={port} disabled={connected} style="flex:1">
-        {#each ports as p}<option value={p.name}>{p.product} — {p.name}</option>{:else}<option value="">No controller found</option>{/each}
+        {#each ports as p}<option value={p.name}>{p.product} — {p.name}</option>{:else}<option value="">No MidiMaster Deck found. Plug it in and refresh.</option>{/each}
       </select>
-      <button class="icon-btn" onclick={scan} disabled={connected} title="Look for controllers again"><Icon name="refresh" /></button>
+      <button class="icon-btn" onclick={scan} disabled={connected} title="Look for the Deck again"><Icon name="refresh" /></button>
       {#if connected}
         <button class="btn" onclick={disconnect}>Disconnect</button>
       {:else}
@@ -131,13 +131,13 @@
       <div class="card row wrap">
         <button class="btn tonal" onclick={() => send("sync")}>Send all values</button>
         <button class="btn" onclick={() => send("zero")}>Set all knobs to 0</button>
-        <button class="btn text" onclick={() => { if (confirm("Reset the controller settings to defaults?")) send("defaults"); }}>Defaults</button>
+        <button class="btn text" onclick={() => { if (confirm("Reset the MidiMaster Deck settings to defaults?")) send("defaults"); }}>Defaults</button>
         <span class="hint" style="margin:0">{note}</span>
       </div>
 
       {#if mon}
         <div class="card">
-          <h3>Live values on the controller</h3>
+          <h3>Live values on the Deck</h3>
           {#each mon.enc as v, i}
             {@const max = cfg.mode === 0 ? 127 : 16383}
             {@const val = cfg.mode === 0 ? v >> 7 : v}
@@ -148,7 +148,7 @@
         </div>
       {/if}
     {:else if connected}
-      <p class="hint">Waiting for the controller… (it needs the MidiMaster-compatible firmware)</p>
+      <p class="hint">Waiting for the Deck… (it needs the MidiMaster Deck firmware)</p>
     {/if}
   </div>
 </div>

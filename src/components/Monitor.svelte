@@ -1,6 +1,6 @@
 <script lang="ts">
   // Every incoming MIDI message, newest first, with the control it moves.
-  import { app } from "../lib/state.svelte";
+  import { app, deviceLabel } from "../lib/state.svelte";
 
   let onlyUnmapped = $state(false);
   const rows = $derived(onlyUnmapped ? app.log.filter((l) => !l.mapped) : app.log);
@@ -19,7 +19,7 @@
     {#each rows as l, i (l.t + "-" + i)}
       <div class="tr" class:unmapped={!l.mapped}>
         <span>{new Date(l.t).toLocaleTimeString()}</span>
-        <span class="port">{l.port}</span>
+        <span class="port" title={l.port}>{deviceLabel(l.port)}</span>
         <span>{l.channel}</span>
         <span>{kindName[l.kind]}</span>
         <span>{l.kind === "pb" ? "–" : l.number}</span>

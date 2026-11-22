@@ -1,8 +1,15 @@
-# MidiMaster
+<p align="center">
+  <img src="app-icon.svg" alt="MidiMaster logo" width="128" height="128">
+</p>
 
-Build a picture of your MIDI controller, map every knob, fader, button and joystick,
-and use it to control your computer. Runs on **macOS** and **Windows**.
+<h1 align="center">MidiMaster</h1>
 
+<p align="center">
+  Build a picture of your MIDI controller, map every knob, fader, button and joystick,
+  and use it to control your computer. Runs on <b>macOS</b> and <b>Windows</b>.
+</p>
+
+- **Device presets:** pick *MidiMaster Deck* and every control is placed where it sits on the real Deck, already mapped. Or start empty.
 - **Builder:** drag knobs, encoders, faders (vertical and horizontal), joysticks, buttons, pads and text onto a canvas; move, resize, name and colour them.
 - **MIDI Learn:** select a control, click *Learn*, move the real thing. Supports CC, 14-bit CC, pitch bend and notes.
 - **Live view:** every control follows the hardware and lights up when it moves. Unmapped controls are outlined; the *MIDI monitor* lists every message and which ones nothing listens to.
@@ -10,8 +17,9 @@ and use it to control your computer. Runs on **macOS** and **Windows**.
 - **Triggers:** follow the value, press, release, long press, double press, turn up, turn down.
 - **Layers:** one button switches what all controls do.
 - **Profiles:** switch automatically by the app in front.
-- **Device settings:** the RP2040 controller's own settings (output mode, resolution, acceleration, directions, joystick), stored on the controller.
-- Runs in the menu bar / system tray; optional start at login.
+- **MidiMaster Deck settings:** the Deck's own settings (output mode, resolution, acceleration, directions, joystick), stored on the Deck.
+- Drag the empty canvas (or use the middle mouse button) to move around.
+- Runs in the menu bar / system tray with a one-colour icon; optional start at login.
 
 ## Download
 
@@ -41,7 +49,10 @@ Playback control through the Web API needs Spotify Premium.
 
 ## OBS
 
-OBS → Tools → WebSocket Server Settings → enable it, then put the address and password in MidiMaster → Settings.
+MidiMaster connects to OBS automatically: it reads the port and password from OBS's own settings,
+the way other control apps do. You only have to switch the server on once:
+OBS → Tools → WebSocket Server Settings → *Enable WebSocket server*.
+In OBS actions you can then pick your scenes and sources from a list.
 
 ## Limits
 

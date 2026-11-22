@@ -10,6 +10,7 @@
   import ControllerPanel from "./components/ControllerPanel.svelte";
   import Settings from "./components/Settings.svelte";
   import Icon from "./components/Icon.svelte";
+  import PresetDialog from "./components/PresetDialog.svelte";
 
   let ready = $state(false);
   let error = $state("");
@@ -24,13 +25,13 @@
   const tabs: [Tab, string, string][] = [
     ["builder", "Controller", "tune"],
     ["monitor", "Monitor", "graphic_eq"],
-    ["controller", "Device", "settings_input_component"],
+    ["controller", "Deck", "settings_input_component"],
     ["settings", "Settings", "settings"],
   ];
   const titles: Record<Tab, string> = {
     builder: "Controller",
     monitor: "MIDI monitor",
-    controller: "Device settings",
+    controller: "MidiMaster Deck",
     settings: "Settings",
   };
   const unmapped = $derived((profile()?.controls ?? []).filter((c) => c.kind !== "label" && !c.binding).length);
@@ -88,6 +89,10 @@
       {/if}
     </main>
   </div>
+
+  {#if app.presetDialog}
+    <PresetDialog mode={app.presetDialog} onclose={() => (app.presetDialog = null)} />
+  {/if}
 
   <div class="snackbars">
     {#each app.toasts as t (t.id)}

@@ -1,4 +1,4 @@
-//! USB-serial link to the RP2040 controller's settings (same protocol as the
+//! USB-serial link to the MidiMaster Deck's settings (same protocol as the
 //! old web page: `get`, `set <name> <value>`, `save`, `mon 1`, ...).
 
 use std::io::{BufRead, BufReader, Write};
@@ -29,7 +29,8 @@ pub fn list() -> Vec<PortInfo> {
         .filter_map(|p| match p.port_type {
             SerialPortType::UsbPort(u) if VIDS.contains(&u.vid) => Some(PortInfo {
                 name: p.port_name,
-                product: u.product.unwrap_or_else(|| "RP2040".into()),
+                // the RP2040-Zero board in the Deck reports itself as "RP2040 Zero"
+                product: "MidiMaster Deck".into(),
             }),
             _ => None,
         })
