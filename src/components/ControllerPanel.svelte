@@ -4,6 +4,8 @@
   import { invoke } from "@tauri-apps/api/core";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { toast } from "../lib/state.svelte";
+  import { fill } from "../lib/range";
+  import Icon from "./Icon.svelte";
 
   interface Cfg { mode: number; clicks: number; accel: number; encRev: number; panInv: number; tiltInv: number; sweep: number; dead: number }
   interface Mon { enc: number[]; pan: number; tilt: number }
@@ -79,18 +81,17 @@
 
 <div class="panel">
   <div class="inner">
-    <h2>Controller settings</h2>
     <p class="hint">These settings live on the RP2040 controller itself and are saved there automatically.</p>
 
     <div class="card row">
       <select bind:value={port} disabled={connected} style="flex:1">
         {#each ports as p}<option value={p.name}>{p.product} — {p.name}</option>{:else}<option value="">No controller found</option>{/each}
       </select>
-      <button class="btn" onclick={scan} disabled={connected}>Refresh</button>
+      <button class="icon-btn" onclick={scan} disabled={connected} title="Look for controllers again"><Icon name="refresh" /></button>
       {#if connected}
         <button class="btn" onclick={disconnect}>Disconnect</button>
       {:else}
-        <button class="btn primary" onclick={connect} disabled={!port}>Connect</button>
+        <button class="btn filled has-icon" onclick={connect} disabled={!port}><Icon name="usb" size={18} />Connect</button>
       {/if}
     </div>
 
@@ -99,38 +100,38 @@
         <h3>Knobs (encoders)</h3>
         <span class="label">Output</span>
         <div class="seg">
-          {#each MODES as [l], i}<button class:sel={cfg.mode === i} onclick={() => set("mode", i)}>{l}</button>{/each}
+          {#each MODES as [l], i}<button class:sel={cfg.mode === i} onclick={() => set("mode", i)}>{#if cfg.mode === i}<Icon name="check" size={18} />{/if}{l}</button>{/each}
         </div>
         <p class="hint">{MODES[cfg.mode][1]}</p>
         <label class="field">
           <span>Clicks for full range: {cfg.clicks} (≈ {(cfg.clicks / 20).toFixed(1)} turns)</span>
-          <input type="range" min="16" max="2000" value={cfg.clicks} oninput={(e) => set("clicks", +e.currentTarget.value)} />
+          <input type="range" min="16" max="2000" value={cfg.clicks} oninput={(e) => set("clicks", +e.currentTarget.value)} use:fill={cfg.clicks} />
         </label>
         <label class="field">
           <span>Acceleration when turning fast: {cfg.accel}× {cfg.accel === 1 ? "(off)" : ""}</span>
-          <input type="range" min="1" max="16" value={cfg.accel} oninput={(e) => set("accel", +e.currentTarget.value)} />
+          <input type="range" min="1" max="16" value={cfg.accel} oninput={(e) => set("accel", +e.currentTarget.value)} use:fill={cfg.accel} />
         </label>
-        <label class="check"><input type="checkbox" checked={!!cfg.encRev} onchange={(e) => set("encRev", e.currentTarget.checked ? 1 : 0)} /> Reverse direction</label>
+        <label class="check">Reverse direction<input type="checkbox" class="switch" checked={!!cfg.encRev} onchange={(e) => set("encRev", e.currentTarget.checked ? 1 : 0)} /></label>
       </div>
 
       <div class="card">
         <h3>Joystick</h3>
-        <label class="check"><input type="checkbox" checked={!!cfg.panInv} onchange={(e) => set("panInv", e.currentTarget.checked ? 1 : 0)} /> Reverse left / right</label>
-        <label class="check"><input type="checkbox" checked={!!cfg.tiltInv} onchange={(e) => set("tiltInv", e.currentTarget.checked ? 1 : 0)} /> Reverse up / down</label>
+        <label class="check">Reverse left / right<input type="checkbox" class="switch" checked={!!cfg.panInv} onchange={(e) => set("panInv", e.currentTarget.checked ? 1 : 0)} /></label>
+        <label class="check">Reverse up / down<input type="checkbox" class="switch" checked={!!cfg.tiltInv} onchange={(e) => set("tiltInv", e.currentTarget.checked ? 1 : 0)} /></label>
         <label class="field">
           <span>Speed: {cfg.sweep.toFixed(1)} s from 0 to 127 at full push</span>
-          <input type="range" min="0.5" max="20" step="0.5" value={cfg.sweep} oninput={(e) => set("sweep", +e.currentTarget.value)} />
+          <input type="range" min="0.5" max="20" step="0.5" value={cfg.sweep} oninput={(e) => set("sweep", +e.currentTarget.value)} use:fill={cfg.sweep} />
         </label>
         <label class="field">
           <span>Dead zone: {cfg.dead}</span>
-          <input type="range" min="0" max="200" value={cfg.dead} oninput={(e) => set("dead", +e.currentTarget.value)} />
+          <input type="range" min="0" max="200" value={cfg.dead} oninput={(e) => set("dead", +e.currentTarget.value)} use:fill={cfg.dead} />
         </label>
       </div>
 
       <div class="card row wrap">
-        <button class="btn" onclick={() => send("sync")}>Send all values</button>
+        <button class="btn tonal" onclick={() => send("sync")}>Send all values</button>
         <button class="btn" onclick={() => send("zero")}>Set all knobs to 0</button>
-        <button class="btn" onclick={() => { if (confirm("Reset the controller settings to defaults?")) send("defaults"); }}>Defaults</button>
+        <button class="btn text" onclick={() => { if (confirm("Reset the controller settings to defaults?")) send("defaults"); }}>Defaults</button>
         <span class="hint" style="margin:0">{note}</span>
       </div>
 
@@ -153,18 +154,15 @@
 </div>
 
 <style>
-  .panel { flex: 1; overflow-y: auto; background: var(--bg); }
-  .inner { max-width: 680px; margin: 0 auto; padding: 24px 20px 60px; }
-  h2 { margin: 0 0 4px; font-size: 20px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+  .panel { flex: 1; overflow-y: auto; }
+  .inner { max-width: 720px; padding: 0 24px 48px; }
+  .card { background: var(--md-surface-container-lowest); border-radius: 16px; padding: 20px; margin-top: 16px; }
+  .card h3 { margin-top: 0; }
   .wrap { flex-wrap: wrap; }
-  .label { font-size: 12px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 6px; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 8px; flex-wrap: wrap; }
-  .seg button { border: 0; border-right: 1px solid var(--line); background: none; padding: 7px 12px; cursor: pointer; }
-  .seg button:last-child { border-right: 0; }
-  .seg button.sel { background: var(--accent); color: var(--accent-ink); }
-  .meter { display: grid; grid-template-columns: 60px 1fr 60px; gap: 10px; align-items: center; margin-bottom: 7px; font-size: 12px; }
-  .track { height: 8px; background: var(--accent-soft); border-radius: 4px; overflow: hidden; }
-  .track div { height: 100%; background: var(--accent); }
-  .num { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .label { font: 400 12px/16px Roboto, sans-serif; letter-spacing: 0.4px; color: var(--md-on-surface-variant); display: block; margin: 0 0 8px 4px; }
+  .seg { margin-bottom: 8px; flex-wrap: wrap; }
+  .meter { display: grid; grid-template-columns: 64px 1fr 64px; gap: 12px; align-items: center; margin-bottom: 10px; font: 500 12px/16px Roboto, sans-serif; }
+  .track { height: 8px; background: var(--md-secondary-container); border-radius: 4px; overflow: hidden; }
+  .track div { height: 100%; background: var(--md-primary); border-radius: 4px; }
+  .num { text-align: right; color: var(--md-on-surface-variant); font-variant-numeric: tabular-nums; }
 </style>

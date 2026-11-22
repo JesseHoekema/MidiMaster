@@ -55,20 +55,22 @@
     transition: box-shadow 0.25s;
   }
   .ctl.active { box-shadow: 0 0 0 2px var(--c), 0 0 18px -2px var(--c); transition: box-shadow 0s; }
-  .ctl.unmapped { outline: 1.5px dashed var(--muted); outline-offset: 2px; opacity: 0.75; }
+  .ctl.unmapped { outline: 1.5px dashed var(--md-outline); outline-offset: 3px; opacity: 0.7; }
   .name {
     position: absolute;
     left: 50%;
     bottom: -18px;
     transform: translateX(-50%);
     font-size: 11px;
-    color: var(--muted);
+    color: var(--md-on-surface-variant);
+    font: 500 11px/16px Roboto, sans-serif;
+    letter-spacing: 0.5px;
     white-space: nowrap;
     pointer-events: none;
   }
   .slider .name { bottom: -28px; }
   .sliderH .name { bottom: -20px; }
-  .text { font-weight: 600; font-size: 15px; height: 100%; display: flex; align-items: center; }
+  .text { font: 500 16px/24px Roboto, sans-serif; color: var(--md-on-surface); height: 100%; display: flex; align-items: center; }
   svg.fill { width: 100%; height: 100%; display: block; }
   .track { stroke: var(--device-2); stroke-width: 7; fill: none; stroke-linecap: round; }
   .value { stroke: var(--c); stroke-width: 7; fill: none; stroke-linecap: round; }

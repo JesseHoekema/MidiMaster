@@ -170,27 +170,29 @@
     position: relative;
     flex: 1;
     overflow: auto;
-    background: var(--canvas);
+    margin: 0 0 16px;
+    border-radius: 16px;
+    background: var(--md-surface-container-lowest);
   }
   .area.editing {
-    background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+    background-image: radial-gradient(var(--md-outline-variant) 1px, transparent 1px);
     background-size: 10px 10px;
   }
   .board { position: relative; }
   .item { position: absolute; touch-action: none; }
   .editing .item { cursor: grab; }
-  .item.selected { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 10px; }
-  .item.learning { outline: 2px dashed var(--accent); outline-offset: 5px; animation: pulse 0.9s infinite; border-radius: 10px; }
+  .item.selected { outline: 2px solid var(--md-primary); outline-offset: 6px; border-radius: 12px; }
+  .item.learning { outline: 2px dashed var(--md-primary); outline-offset: 6px; animation: pulse 0.9s infinite; border-radius: 12px; }
   @keyframes pulse { 50% { outline-color: transparent; } }
   .handle {
     position: absolute;
-    right: -10px;
-    bottom: -10px;
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
-    background: var(--accent);
-    border: 2px solid var(--panel);
+    right: -12px;
+    bottom: -12px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--md-primary);
+    border: 3px solid var(--md-surface-container-lowest);
     cursor: nwse-resize;
   }
   .empty {
@@ -198,7 +200,7 @@
     inset: 0;
     display: grid;
     place-items: center;
-    color: var(--muted);
+    color: var(--md-on-surface-variant);
     pointer-events: none;
   }
 </style>

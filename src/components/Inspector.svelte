@@ -5,6 +5,8 @@
   import { app, describeBinding, profile, save, selectedControl, toast, uid } from "../lib/state.svelte";
   import { ACTIONS, TRIGGERS, actionInfo, describeAction, newAction } from "../lib/catalog";
   import type { ActionSpec, ActionType, Axis, Binding, BindKind } from "../lib/types";
+  import { fill } from "../lib/range";
+  import Icon from "./Icon.svelte";
 
   const c = $derived(selectedControl());
   const p = $derived(profile());
@@ -62,7 +64,9 @@
 <aside class="inspector">
   {#if !c}
     <div class="none">
-      <p><b>Select a control</b> to map it and give it actions.</p>
+      <Icon name="touch_app" size={40} />
+      <p class="title-medium">Select a control</p>
+      <p>Then map it to your hardware and give it actions.</p>
       <p class="hint">Tip: in the Monitor tab you can see every MIDI message, and which ones aren't mapped yet.</p>
     </div>
   {:else}
@@ -89,10 +93,10 @@
         <div class="binding" class:on={!!b}>
           <div class="row">
             <b style="flex:1">{c.kind === "joystick" ? (axis === "x" ? "Left / right: " : "Up / down: ") : ""}{describeBinding(b)}</b>
-            <button class="btn small" class:active={app.learning?.id === c.id && app.learning.axis === axis} onclick={() => learn(axis)}>
-              {app.learning?.id === c.id && app.learning.axis === axis ? "Move it now…" : "Learn"}
+            <button class="btn small has-icon {app.learning?.id === c.id && app.learning.axis === axis ? 'filled' : 'tonal'}" onclick={() => learn(axis)}>
+              <Icon name="sensors" size={18} />{app.learning?.id === c.id && app.learning.axis === axis ? "Move it now…" : "Learn"}
             </button>
-            {#if b}<button class="btn small" onclick={() => setBinding(axis, null)} title="Remove mapping">✕</button>{/if}
+            {#if b}<button class="icon-btn small" onclick={() => setBinding(axis, null)} title="Remove mapping"><Icon name="link_off" size={20} /></button>{/if}
           </div>
           <div class="row manual">
             <select value={b?.kind ?? ""} onchange={(e) => editBinding(axis, "kind", e.currentTarget.value)}>
@@ -107,19 +111,19 @@
               <input type="number" min="0" max="127" title="Number" value={b?.number ?? 0} onchange={(e) => editBinding(axis, "number", e.currentTarget.value)} />
             {/if}
           </div>
-          <label class="check small"><input type="checkbox" checked={axis === "y" ? c.invertY : c.invert} onchange={(e) => { if (axis === "y") c.invertY = e.currentTarget.checked; else c.invert = e.currentTarget.checked; save(); }} /> Reverse direction</label>
+          <label class="check left small"><input type="checkbox" checked={axis === "y" ? c.invertY : c.invert} onchange={(e) => { if (axis === "y") c.invertY = e.currentTarget.checked; else c.invert = e.currentTarget.checked; save(); }} /> Reverse direction</label>
         </div>
       {/each}
 
       {#if continuousKind}
         <h3>Value</h3>
         <div class="row">
-          <label class="field"><span>From {Math.round(c.min * 100)}%</span><input type="range" min="0" max="1" step="0.01" bind:value={c.min} oninput={save} /></label>
-          <label class="field"><span>To {Math.round(c.max * 100)}%</span><input type="range" min="0" max="1" step="0.01" bind:value={c.max} oninput={save} /></label>
+          <label class="field"><span>From {Math.round(c.min * 100)}%</span><input type="range" min="0" max="1" step="0.01" bind:value={c.min} oninput={save} use:fill={c.min} /></label>
+          <label class="field"><span>To {Math.round(c.max * 100)}%</span><input type="range" min="0" max="1" step="0.01" bind:value={c.max} oninput={save} use:fill={c.max} /></label>
         </div>
         <label class="field">
           <span>Response: {c.curve < 0.95 ? "fast at the start" : c.curve > 1.05 ? "fine at the start (good for volume)" : "straight"}</span>
-          <input type="range" min="0.3" max="3" step="0.05" bind:value={c.curve} oninput={save} />
+          <input type="range" min="0.3" max="3" step="0.05" bind:value={c.curve} oninput={save} use:fill={c.curve} />
         </label>
       {/if}
 
@@ -135,8 +139,8 @@
                 </optgroup>
               {/each}
             </select>
-            <button class="btn small" onclick={() => test(s)} title="Run it now">Test</button>
-            <button class="btn small danger" onclick={() => { c.actions = c.actions.filter((x) => x !== s); save(); }} title="Remove">✕</button>
+            <button class="icon-btn small" onclick={() => test(s)} title="Test: run it now"><Icon name="bolt" size={20} /></button>
+            <button class="icon-btn small" onclick={() => { c.actions = c.actions.filter((x) => x !== s); save(); }} title="Remove action"><Icon name="delete" size={20} /></button>
           </div>
           {#each info.params ?? [] as prm}
             {@const rec = s.action as Record<string, unknown>}
@@ -188,7 +192,7 @@
         </div>
       {/each}
       <select value="" onchange={(e) => { addAction(e.currentTarget.value); e.currentTarget.value = ""; }} class="add">
-        <option value="">+ Add action…</option>
+        <option value="">Add action…</option>
         {#each groups as g}
           <optgroup label={g}>
             {#each ACTIONS.filter((a) => a.group === g) as a}<option value={a.type}>{a.label}</option>{/each}
@@ -204,27 +208,27 @@
 
 <style>
   .inspector {
-    width: 330px;
+    width: 340px;
     flex: none;
-    border-left: 1px solid var(--line);
-    background: var(--panel);
-    padding: 16px;
+    padding: 4px 24px 24px 16px;
     overflow-y: auto;
     user-select: text;
   }
-  .none { color: var(--muted); padding-top: 30px; text-align: center; }
-  .sub { font-size: 12px; color: var(--muted); font-weight: 500; }
-  .value { font-variant-numeric: tabular-nums; padding: 6px 0; }
-  .color { padding: 2px; height: 32px; }
-  .binding { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; margin-bottom: 10px; background: var(--panel-2); }
-  .binding.on { border-color: var(--accent); }
-  .manual { margin: 8px 0; }
+  .none { color: var(--md-on-surface-variant); padding-top: 48px; text-align: center; display: grid; justify-items: center; gap: 4px; }
+  .none .title-medium { color: var(--md-on-surface); margin-top: 8px; }
+  .none p { margin: 0; }
+  .sub { font: 400 12px/16px Roboto, sans-serif; letter-spacing: 0.4px; color: var(--md-on-surface-variant); padding-left: 4px; }
+  .value { font: 500 22px/28px Roboto, sans-serif; font-variant-numeric: tabular-nums; padding: 4px; color: var(--md-primary); }
+  .binding { border-radius: 12px; padding: 12px; margin-bottom: 12px; background: var(--md-surface-container-high); }
+  .binding.on { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  .binding b { font: 500 14px/20px Roboto, sans-serif; }
+  .manual { margin: 12px 0 8px; }
   .manual select { flex: 2; }
-  .manual input { flex: 1; }
-  .check.small { font-size: 12px; margin: 0; }
-  .action { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 10px 2px; margin-bottom: 10px; background: var(--panel-2); }
-  .action .top { margin-bottom: 10px; }
-  .action .top select { flex: 1; font-weight: 600; }
-  .row > .field { flex: 1; }
-  .add { color: var(--accent); font-weight: 600; }
+  .manual input { flex: 1; min-width: 0; }
+  .check.small { font-size: 13px; }
+  .action { border-radius: 12px; padding: 12px 12px 0; margin-bottom: 12px; background: var(--md-surface-container-high); }
+  .action .top { margin-bottom: 12px; }
+  .action .top select { flex: 1; font-weight: 500; }
+  .row > .field { flex: 1; min-width: 0; }
+  .add { border-style: dashed; color: var(--md-primary); font-weight: 500; }
 </style>

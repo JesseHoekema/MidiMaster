@@ -104,6 +104,11 @@ function learn(m: MidiMsg) {
     pendingMsb = null;
     return bind({ kind: "cc14", channel: m.channel, number: n });
   }
+  if (pendingMsb && m.number === pendingMsb.m.number && m.channel === pendingMsb.m.channel) {
+    clearTimeout(pendingMsb.timer);
+    pendingMsb = null;
+    return bind({ kind: "cc", channel: m.channel, number: m.number });
+  }
   if (m.number < 32) {
     if (pendingMsb) clearTimeout(pendingMsb.timer);
     const msb = m;

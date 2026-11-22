@@ -10,10 +10,12 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource/roboto": "^5.3.0",
     "@tauri-apps/api": "^2.12.5",
     "@tauri-apps/plugin-autostart": "^2.7.0"
   },
   "devDependencies": {
+    "@material-symbols/svg-400": "^0.49.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tauri-apps/cli": "^2.12.6",
     "@tsconfig/svelte": "^5.0.9",

@@ -5,6 +5,7 @@
   import { CONTROL_KINDS } from "../lib/catalog";
   import type { ControlKind, Profile } from "../lib/types";
   import ControlView from "./ControlView.svelte";
+  import Icon from "./Icon.svelte";
 
   let { onadd }: { onadd: (k: ControlKind) => void } = $props();
   const p = $derived(profile());
@@ -57,22 +58,24 @@
 
 <aside class="side">
   <h3>Profile</h3>
-  <select value={app.config?.activeProfile} onchange={(e) => pick(e.currentTarget.value)}>
-    {#each app.config?.profiles ?? [] as pr}<option value={pr.id}>{pr.name}</option>{/each}
-  </select>
+  <label class="field"><span>Active profile</span>
+    <select value={app.config?.activeProfile} onchange={(e) => pick(e.currentTarget.value)}>
+      {#each app.config?.profiles ?? [] as pr}<option value={pr.id}>{pr.name}</option>{/each}
+    </select>
+  </label>
   {#if p}
-    <label class="field" style="margin-top:8px"><span>Name</span><input bind:value={p.name} oninput={save} /></label>
+    <label class="field"><span>Name</span><input bind:value={p.name} oninput={save} /></label>
     <label class="field">
       <span>Switch to it when this app is in front</span>
       <input bind:value={appsText} onchange={setApps} placeholder="e.g. Spotify, OBS" />
     </label>
     {#if app.status?.frontmost && app.config?.autoSwitch}
-      <button class="link" onclick={useFrontmost}>Add last used app: {app.status.frontmost}</button>
+      <button class="btn text small link" onclick={useFrontmost}><Icon name="add" size={18} />{app.status.frontmost}</button>
     {/if}
     <div class="row wrap">
-      <button class="btn small" onclick={() => addProfile(false)}>New</button>
-      <button class="btn small" onclick={() => addProfile(true)}>Duplicate</button>
-      <button class="btn small danger" onclick={removeProfile} disabled={(app.config?.profiles.length ?? 0) < 2}>Delete</button>
+      <button class="btn tonal small has-icon" onclick={() => addProfile(false)}><Icon name="add" size={18} />New</button>
+      <button class="icon-btn small" onclick={() => addProfile(true)} title="Duplicate profile"><Icon name="content_copy" size={20} /></button>
+      <button class="icon-btn small danger" onclick={removeProfile} disabled={(app.config?.profiles.length ?? 0) < 2} title="Delete profile"><Icon name="delete" size={20} /></button>
     </div>
 
     <h3>Layers</h3>
@@ -82,11 +85,11 @@
         <button class="dot" class:on={app.layer === i} onclick={() => setLayer(i)} title="Make active" aria-label="Make active"></button>
         <input value={l} oninput={(e) => { p.layers[i] = e.currentTarget.value; save(); }} />
         {#if p.layers.length > 1}
-          <button class="btn small" onclick={() => { p.layers.splice(i, 1); save(); }} title="Remove layer">✕</button>
+          <button class="icon-btn small" onclick={() => { p.layers.splice(i, 1); save(); }} title="Remove layer"><Icon name="close" size={18} /></button>
         {/if}
       </div>
     {/each}
-    <button class="btn small" onclick={() => { p.layers.push(`Layer ${p.layers.length + 1}`); save(); }}>+ Layer</button>
+    <button class="btn text small has-icon" onclick={() => { p.layers.push(`Layer ${p.layers.length + 1}`); save(); }}><Icon name="add" size={18} />Add layer</button>
   {/if}
 
   {#if app.editing}
@@ -112,31 +115,36 @@
 
 <style>
   .side {
-    width: 240px;
+    width: 256px;
     flex: none;
-    border-right: 1px solid var(--line);
-    background: var(--panel);
-    padding: 16px;
+    padding: 4px 16px 24px 24px;
     overflow-y: auto;
   }
   .wrap { flex-wrap: wrap; }
-  .layer { margin-bottom: 6px; }
-  .dot { width: 14px; height: 14px; flex: none; border-radius: 50%; border: 2px solid var(--line); background: none; cursor: pointer; padding: 0; }
-  .dot.on { background: var(--accent); border-color: var(--accent); }
-  .link { background: none; border: 0; color: var(--accent); padding: 0; margin: -4px 0 10px; cursor: pointer; font-size: 12px; text-align: left; }
+  .layer { margin-bottom: 8px; }
+  .dot { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 2px solid var(--md-on-surface-variant); background: none; cursor: pointer; padding: 0; position: relative; }
+  .dot.on { border-color: var(--md-primary); }
+  .dot.on::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--md-primary); }
+  .link { margin: -12px 0 12px -10px; }
   .palette { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .tile {
+    position: relative;
+    overflow: hidden;
     display: grid;
     justify-items: center;
-    gap: 6px;
-    padding: 10px 6px 8px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--panel-2);
+    gap: 8px;
+    padding: 14px 6px 10px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--md-surface-container-highest);
+    color: var(--md-on-surface);
     cursor: grab;
-    font-size: 12px;
+    font: 500 12px/16px Roboto, sans-serif;
+    letter-spacing: 0.5px;
   }
-  .tile:hover { border-color: var(--accent); }
+  .tile::after { content: ""; position: absolute; inset: 0; background: currentColor; opacity: 0; transition: opacity 0.15s; }
+  .tile:hover::after { opacity: 0.08; }
+  .tile:active { cursor: grabbing; }
   .mini { width: 44px; height: 44px; pointer-events: none; }
   .mini.wide { width: 64px; height: 26px; margin: 9px 0; }
   .mini.tall { width: 26px; height: 44px; }
