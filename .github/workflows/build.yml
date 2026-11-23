@@ -96,11 +96,43 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Write the update feed (latest.json)
+      - name: Release notes (from CHANGELOG.md) and update feed (latest.json)
         run: |
           node - <<'EOF'
           const fs = require("fs");
           const v = require("./src-tauri/tauri.conf.json").version;
+
+          // this version's section of CHANGELOG.md, without its heading
+          const log = fs.readFileSync("CHANGELOG.md", "utf8");
+          const m = log.match(new RegExp(`^## \\[${v.replace(/\./g, "\\.")}\\][^\\n]*\\n([\\s\\S]*?)(?=^## \\[|(?![\\s\\S]))`, "m"));
+          if (!m) {
+            console.error(`CHANGELOG.md has no section for ${v}. Add "## [${v}]" before releasing.`);
+            process.exit(1);
+          }
+          const changes = m[1].trim();
+
+          const table = [
+            "## Download",
+            "",
+            "| Your computer | File |",
+            "|---|---|",
+            `| Mac with Apple Silicon (M1, M2, M3, M4…) | \`MidiMaster_${v}_macos_silicon.dmg\` |`,
+            `| Mac with an Intel processor | \`MidiMaster_${v}_macos_intel.dmg\` |`,
+            `| Windows 10 / 11 | \`MidiMaster_${v}_windows_setup.exe\` (or the \`.msi\`) |`,
+            "",
+            "Already have MidiMaster 0.2.0 or newer? It offers this update by itself.",
+            "The `.app.tar.gz` files and `latest.json` are for the built-in updater.",
+          ].join("\n");
+          fs.writeFileSync("release_notes.md", `${changes.replace(/^### /gm, "## ")}\n\n${table}\n`);
+
+          // plain text for the update popup in the app
+          const plain = changes
+            .replace(/^### (.*)$/gm, "$1:")
+            .replace(/\*\*(.*?)\*\*/g, "$1")
+            .replace(/`([^`]*)`/g, "$1")
+            .replace(/^- /gm, "• ")
+            .replace(/\n {2,}/g, " ");
+
           const base = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}`;
           const entry = (file) => ({
             url: `${base}/${file}`,
@@ -108,7 +140,7 @@ jobs:
           });
           const feed = {
             version: v,
-            notes: `MidiMaster ${v}. See the release page for what's new.`,
+            notes: plain,
             pub_date: new Date().toISOString(),
             platforms: {
               "darwin-aarch64": entry(`MidiMaster_${v}_macos_silicon.app.tar.gz`),
@@ -117,6 +149,7 @@ jobs:
             },
           };
           fs.writeFileSync("dist/latest.json", JSON.stringify(feed, null, 2));
+          console.log(fs.readFileSync("release_notes.md", "utf8"));
           EOF
           rm dist/*.sig
           ls -la dist
@@ -124,13 +157,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           name: MidiMaster ${{ github.ref_name }}
-          body: |
-            | Your computer | Download |
-            |---|---|
-            | Mac with Apple Silicon (M1, M2, M3, M4…) | `MidiMaster_*_macos_silicon.dmg` |
-            | Mac with an Intel processor | `MidiMaster_*_macos_intel.dmg` |
-            | Windows 10 / 11 | `MidiMaster_*_windows_setup.exe` (or the `.msi`) |
-
-            Already have MidiMaster 0.2.0 or newer? It offers this update by itself.
-            The `.app.tar.gz` files and `latest.json` are for the built-in updater.
+          body_path: release_notes.md
           files: dist/*

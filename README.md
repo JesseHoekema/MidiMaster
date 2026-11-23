@@ -133,10 +133,15 @@ cd src-tauri && cargo test --lib
 ### Releases
 
 Every push to `main` builds all three versions with GitHub Actions (download them from the run's *Artifacts*).
-To publish a release, push a version tag:
+To publish a release:
+
+1. Raise `version` in `src-tauri/tauri.conf.json` (and `src-tauri/Cargo.toml`, `package.json`).
+2. Add a section for that version at the top of [`CHANGELOG.md`](CHANGELOG.md) with **New**, **Improved** and **Fixed** lists.
+   It becomes the release notes on GitHub and the text in the app's update popup.
+3. Commit, then push a version tag:
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.3.0 && git push origin v0.3.0
 ```
 
 The workflow builds Apple Silicon, Intel and Windows, names the files after the platform
